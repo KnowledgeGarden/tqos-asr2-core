@@ -44,10 +44,10 @@ public class AsrCoreEnvironment extends RootEnvironment {
 	 */
 	public AsrCoreEnvironment() {
 		super("asr-props.xml", "logger.properties");
-		topicMapEnvironment = new SystemEnvironment("tq_contents");
+		topicMapEnvironment = new SystemEnvironment();
 		stats = topicMapEnvironment.getStats();
 		changeRegistry = new WordGramChangeEventRegistry();
-		wordGramEnvironment = new WordGramEnvironment("wordgram-props", "logger.properties");
+		wordGramEnvironment = new WordGramEnvironment("wordgram-props.xml", "logger.properties");
 		wgCache = new WordGramCache(this, cacheSize);
 		String schemaName = getStringProperty("DatabaseSchema");
 		generalEnvironment = new GeneralDatabaseEnvironment(schemaName);
