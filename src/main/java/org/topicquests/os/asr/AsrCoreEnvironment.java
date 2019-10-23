@@ -44,7 +44,7 @@ public class AsrCoreEnvironment extends RootEnvironment {
 	 */
 	public AsrCoreEnvironment() {
 		super("asr-props.xml", "logger.properties");
-		topicMapEnvironment = new SystemEnvironment();
+		topicMapEnvironment = new SystemEnvironment("tq_contents");
 		stats = topicMapEnvironment.getStats();
 		changeRegistry = new WordGramChangeEventRegistry();
 		wordGramEnvironment = new WordGramEnvironment("wordgram-props", "logger.properties");
