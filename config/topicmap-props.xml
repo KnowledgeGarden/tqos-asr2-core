@@ -5,6 +5,11 @@
 
 <properties>
 	
+	<!-- this server commmunicates with the Statistics Server -->
+	<parameter name="StatServerURl" value="localhost" /> <!--  coordinate with StatServer -->
+	<parameter name="StatServerPort" value="6900" /> <!-- coordinate with StatServer -->
+	<parameter name="StatServerClientId" value = "changeme" /> <!-- coordinate with StatServer -->
+	
 	<!--
 		ShouldBootstrap: 
 			Yes = test for bootstrap the topic map

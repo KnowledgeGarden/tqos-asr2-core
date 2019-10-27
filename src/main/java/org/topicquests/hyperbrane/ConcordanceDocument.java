@@ -57,8 +57,10 @@ public class ConcordanceDocument implements IDocument {
 		NODE_LOCATOR			= "NodeLocator",
 		METADATA				= "MetaData",
 		DB_PEDIA_URI_LIST		= "dbpuri",
+		WIKDATA_URI_LIST		= "wduri",
 		ISA_STRUCTURE			= "isaStruct",
-		WORDGRAM_HISTOGRAM		= "wordgramHisto";
+		WORDGRAM_HISTOGRAM		= "wordgramHisto",
+		DOCUMENT_TYPE			= "docType";
 
 	
 	/**
@@ -222,16 +224,6 @@ public class ConcordanceDocument implements IDocument {
 	// The other way is to list paragraphs, then list sentences
 	////////////////////////
 
-	@Override
-	public void addSentence(ISentence sentence) {
-		//We are storing Sentence IDs
-		List<String>ss = (List<String>)data.get(SENTENCES);
-		if (ss == null) {
-			ss = new ArrayList<String>();
-		}
-		ss.add(sentence.getID());
-		data.put(SENTENCES, ss);
-	}
 
 
 	@Override
@@ -239,29 +231,9 @@ public class ConcordanceDocument implements IDocument {
 		List<String>ss = (List<String>)data.get(SENTENCES);
 		if (ss != null)
 			ss.remove(sentenceLocator);
-		//TODO remove from data
+		data.put(SENTENCES, ss);
 	}
 
-	@Override
-	public List<ISentence> listSentences() {
-		List<ISentence>result = null;
-		List<String> l = (List<String>)data.get(SENTENCES);
-		if (l != null && !l.isEmpty()) {
-			result = new ArrayList<ISentence>();
-			String id;
-			Iterator<String>itr = l.iterator();
-			IResult r;
-			JSONObject jo;
-			while (itr.hasNext()) {
-				id = itr.next();
-				r = sentenceProvider.getSentence(id);
-				jo = (JSONObject)r.getResultObject();
-				if (jo != null)
-					result.add(new ConcordanceSentence(jo));
-			}
-		}
-		return result;
-	}
 
 	@Override
 	public void setOntologyClassLocator(String locator) {
@@ -317,12 +289,27 @@ public class ConcordanceDocument implements IDocument {
 		if (l == null) l = new ArrayList<String>();
 		if (!l.contains(uri))
 			l.add(uri);
-		getData().put(DB_PEDIA_URI_LIST, l);
+		data.put(DB_PEDIA_URI_LIST, l);
 	}
 
 	@Override
 	public List<String> listDbPediaURIs() {
 		return (List<String>)getData().get(DB_PEDIA_URI_LIST);
+	}
+	
+	@Override
+	public void addWikidataURI(String uri) {
+		List<String> l = listWikidataURIs();
+		if (l == null)
+			l = new ArrayList<String>();
+		if (!l.contains(uri))
+			l.add(uri);
+		data.put(WIKDATA_URI_LIST, l);
+	}
+
+	@Override
+	public List<String> listWikidataURIs() {
+		return (List<String>)getData().get(WIKDATA_URI_LIST);
 	}
 
 	@Override
@@ -395,21 +382,60 @@ public class ConcordanceDocument implements IDocument {
 		return data.getAsString(LANGUAGE);
 	}
 
+	/////////////////////////////////
+	// Abstracts in JSON structure
+	//  {
+	//    "paragraphs": [
+	//		{  
+	//				"en": "para"
+	//		}
+	//		]
+	//	}
+	//
+
 	@Override
-	public void setAbstract(String text, String language) {
+	public void addAbstractParagraph(String text, String language) {
 		JSONObject abs = getAllAbstracts();
+		JSONObject jo = new JSONObject();
+		jo.put(language, text);
 		if (abs == null) 
 			abs = new JSONObject();
-		abs.put(language, text);
+		List<JSONObject> paras = (List<JSONObject>)abs.get("paragraphs");
+		if (paras == null)
+			paras = new ArrayList<JSONObject>();
+		if (!paras.contains(jo))
+			paras.add(jo);
 		data.put(ABSTRACTS, abs);
 	}
 
 	@Override
-	public String getAbstract(String language) {
+	public List<String> listAbstractsForLanguage(String language) {
 		JSONObject abs = getAllAbstracts();
-		if (abs == null)
-			return null;
-		return abs.getAsString(language);
+		if (abs != null) {
+			List<JSONObject> paras = (List<JSONObject>)abs.get("paragraphs");
+			if (paras != null && !paras.isEmpty()) {
+				List<String> result = new ArrayList<String>();
+				Iterator<JSONObject>itr = paras.iterator();
+				JSONObject p;
+				String s;
+				while (itr.hasNext()) {
+					p = itr.next();
+					s = p.getAsString(language);
+					if (s != null)
+						result.add(s);
+				}
+				return result;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public List<JSONObject> listAbstracts() {
+		JSONObject abs = getAllAbstracts();
+		if (abs != null)
+			return (List<JSONObject>)abs.get("paragraphs");
+		return null;
 	}
 
 	@Override
@@ -808,44 +834,69 @@ public class ConcordanceDocument implements IDocument {
 	}
 
 	@Override
-	public void addIsA(String subjectWordGramId, String objectWordGramId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean isA(String subjectWordGramId, String objectWordGramId) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public List<String> listIsAs() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void remove(String subjectWordGramId, String objectWordGramId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void addToHistogram(String wordgramId) {
-		// TODO Auto-generated method stub
-		
+		JSONObject histo = (JSONObject)data.get(WORDGRAM_HISTOGRAM);
+		if (histo == null)
+			histo = new JSONObject();
+		Number num = histo.getAsNumber(wordgramId);
+		if (num == null)
+			num = new Integer(1);
+		else {
+			int x = num.intValue()+1;
+			num = new Integer(x);
+		}
+		histo.put(wordgramId, num);
+		data.put(WORDGRAM_HISTOGRAM, histo);
 	}
 
 	@Override
 	public int getHistogramCount(String wordgramId) {
-		// TODO Auto-generated method stub
+		JSONObject histo = (JSONObject)data.get(WORDGRAM_HISTOGRAM);
+		if (histo != null) {
+			Number num = histo.getAsNumber(wordgramId);
+			if (num != null)
+				return num.intValue();
+		}
 		return 0;
 	}
 
 	@Override
-	public String getTitle() {
-		return data.getAsString(TITLE);
+	public String getNodeType() {
+		return data.getAsString(ITQCoreOntology.INSTANCE_OF_PROPERTY_TYPE);
+	}
+
+	@Override
+	public void setDocumentType(String type) {
+		data.put(DOCUMENT_TYPE, type);
+	}
+
+	@Override
+	public String getDocumentType() {
+		return data.getAsString(DOCUMENT_TYPE);
+	}
+
+
+
+	@Override
+	public JSONObject getEntityHistogram() {
+		JSONObject histo = (JSONObject)data.get(WORDGRAM_HISTOGRAM);
+		return histo;
+	}
+
+	@Override
+	public void addSentence(String sentenceId) {
+		List<String>ss = (List<String>)data.get(SENTENCES);
+		if (ss == null) {
+			ss = new ArrayList<String>();
+		}
+		ss.add(sentenceId);
+		data.put(SENTENCES, ss);
+	}
+
+	@Override
+	public List<String> listSentenceIDs() {
+		List<String>ss = (List<String>)data.get(SENTENCES);
+		return ss;
 	}
 
 

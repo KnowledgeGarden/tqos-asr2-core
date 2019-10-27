@@ -11,7 +11,7 @@ import org.topicquests.asr.general.document.api.IDocumentClient;
 import org.topicquests.hyperbrane.ConcordanceDocument;
 import org.topicquests.hyperbrane.api.IDocument;
 import org.topicquests.ks.api.ITicket;
-import org.topicquests.os.asr.api.IASRConstants;
+//import org.topicquests.os.asr.api.IASRConstants;
 import org.topicquests.os.asr.api.IDocumentProvider;
 import org.topicquests.support.api.IResult;
 
@@ -51,7 +51,7 @@ public class DocumentProvider implements IDocumentProvider {
 	 */
 	@Override
 	public IResult putDocument(IDocument node) {
-		String label = node.getAbstract("en");
+		String label = node.getLabel("en");
 		if (label == null)
 			label  = "";
 		IResult result = documentDatabase.put(node.getId(), label, node.getData());
